@@ -16,6 +16,7 @@ jobs:
           fetch-depth: 0
 
       - name: Generate Version
+        id: version
         shell: pwsh
         run: |
           $VersionConfig = Get-Content version.json | ConvertFrom-Json
@@ -28,11 +29,37 @@ jobs:
 
           $Version = "$Major.$Minor.$Build.$Revision"
 
-          Write-Host "Version: $Version"
+          "version=$Version" >> $env:GITHUB_OUTPUT
 
-          echo "VERSION=$Version" >> $env:GITHUB_ENV
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Release ${{ steps.version.outputs.version }}
 
-      - name: Display Version
+      - name: Package Module
         shell: pwsh
         run: |
-          Write-Host "Generated version: $env:VERSION"
+          New-Item -ItemType Directory `
+            -Path .\output\mua `
+            -Force | Out-Null
+
+          Copy-Item `
+            -Path .\mua\* `
+            -Destination .\output\mua `
+            -Recurse
+
+          Update-ModuleManifest `
+            -Path .\output\mua\mua.psd1 `
+            -ModuleVersion $env:VERSION
+
+      - name: Verify Manifest
+        shell: pwsh
+        run: |
+          Test-ModuleManifest .\output\mua\mua.psd1
+
+      - name: Upload Module
+        uses: actions/upload-artifact@v4
+        with:
+          name: mua
+          path: output/mua
