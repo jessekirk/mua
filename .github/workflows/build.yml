@@ -59,6 +59,12 @@ jobs:
             git push origin "v$Version"
           }
 
+      - name: Debug Files
+        shell: pwsh
+        run: |
+          Get-Location
+          Get-ChildItem -Recurse
+
       - name: Package Module
         shell: pwsh
         env:
@@ -70,18 +76,18 @@ jobs:
             -Force | Out-Null
 
           Copy-Item `
-            -Path .\mua\* `
+            -Path .\* `
             -Destination .\output\mua `
             -Recurse
 
           Update-ModuleManifest `
-            -Path .\output\mua\mua.psd1 `
+            -Path .\output\mua.psd1 `
             -ModuleVersion $env:VERSION
 
       - name: Verify Manifest
         shell: pwsh
         run: |
-          Test-ModuleManifest .\output\mua\mua.psd1
+          Test-ModuleManifest .\output\mua.psd1
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
