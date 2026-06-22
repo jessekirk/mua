@@ -82,7 +82,7 @@ jobs:
             -Exclude output,.git
 
           Update-ModuleManifest `
-            -Path .\output\mua.psd1 `
+            -Path .\mua.psd1 `
             -ModuleVersion $env:VERSION
 
       - name: Verify Manifest
