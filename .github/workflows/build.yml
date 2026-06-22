@@ -70,19 +70,31 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
+          $Source = ".\src\mua"
+          $Dest = ".\output\mua"
+
           New-Item `
             -ItemType Directory `
-            -Path .\output `
+            -Path $Dest `
             -Force | Out-Null
 
           Copy-Item `
-            -Path .\mua\* `
-            -Destination .\output\mua `
+            -Path "$Source\*" `
+            -Destination $Dest `
             -Recurse `
-            -Exclude output,.git
+            -Force
+
+          Write-Host "Copied files:"
+          Get-ChildItem $Dest -Recurse
+
+          $Manifest = Join-Path $Dest "mua.psd1"
+
+          if (!(Test-Path $Manifest)) {
+            throw "Manifest missing: $Manifest"
+          }
 
           Update-ModuleManifest `
-            -Path .\output\mua\mua.psd1 `
+            -Path $Manifest `
             -ModuleVersion $env:VERSION
 
       - name: Verify Manifest
