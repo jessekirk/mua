@@ -153,4 +153,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mua-${{ steps.version.outputs.version }}
-          path: ./package/mua
+          path: ./package/mua/${{ steps.version.outputs.version }}
