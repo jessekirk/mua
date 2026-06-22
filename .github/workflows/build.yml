@@ -100,7 +100,7 @@ jobs:
       - name: Verify Manifest
         shell: pwsh
         run: |
-          Test-ModuleManifest .\output\mua.psd1
+          Test-ModuleManifest .\output\mua\mua.psd1
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
