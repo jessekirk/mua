@@ -108,9 +108,11 @@ jobs:
           tag_name: v${{ steps.version.outputs.version }}
           name: Release ${{ steps.version.outputs.version }}
           generate_release_notes: true
+          files: |
+            output/mua/**
 
       - name: Upload Module
         uses: actions/upload-artifact@v4
         with:
           name: mua-${{ steps.version.outputs.version }}
-          path: output/mua
+          path: ./output/mua
