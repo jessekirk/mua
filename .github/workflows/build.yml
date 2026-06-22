@@ -1,6 +1,11 @@
 name: Build
 
+permissions:
+  contents: write
+
 on:
+  workflow_dispatch:
+
   push:
     branches:
       - master
@@ -29,18 +34,38 @@ jobs:
 
           $Version = "$Major.$Minor.$Build.$Revision"
 
+          Write-Host "Generated Version: $Version"
+
           "version=$Version" >> $env:GITHUB_OUTPUT
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: Release ${{ steps.version.outputs.version }}
+      - name: Show Version
+        shell: pwsh
+        run: |
+          Write-Host "Version = ${{ steps.version.outputs.version }}"
+
+      - name: Create Tag
+        shell: pwsh
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          $Version = "${{ steps.version.outputs.version }}"
+
+          if (git tag --list "v$Version") {
+            Write-Host "Tag already exists."
+          }
+          else {
+            git tag "v$Version"
+            git push origin "v$Version"
+          }
 
       - name: Package Module
         shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          New-Item -ItemType Directory `
+          New-Item `
+            -ItemType Directory `
             -Path .\output\mua `
             -Force | Out-Null
 
@@ -58,8 +83,15 @@ jobs:
         run: |
           Test-ModuleManifest .\output\mua\mua.psd1
 
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Release ${{ steps.version.outputs.version }}
+          generate_release_notes: true
+
       - name: Upload Module
         uses: actions/upload-artifact@v4
         with:
-          name: mua
+          name: mua-${{ steps.version.outputs.version }}
           path: output/mua
