@@ -102,6 +102,25 @@ jobs:
         run: |
           Test-ModuleManifest .\output\mua\mua.psd1
 
+      - name: Prepare Versioned Package
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $VersionedPath = ".\output\mua\$env:VERSION"
+
+          New-Item `
+            -ItemType Directory `
+            -Path $VersionedPath `
+            -Force | Out-Null
+
+          Copy-Item `
+            -Path .\output\mua\* `
+            -Destination $VersionedPath `
+            -Recurse `
+            -Force `
+            -Exclude $env:VERSION
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
