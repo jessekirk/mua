@@ -76,7 +76,7 @@ jobs:
             -Force | Out-Null
 
           Copy-Item `
-            -Path .\mua\* `
+            -Path .\* `
             -Destination .\output\mua `
             -Recurse `
             -Exclude output,.git
