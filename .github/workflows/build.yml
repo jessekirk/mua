@@ -107,22 +107,33 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          $PackageRoot = ".\package\mua\$env:VERSION"
+          $PackageRoot = ".\package"
+          $ModuleRoot = "$PackageRoot\mua\$env:VERSION"
+          $ZipFile = ".\output\mua-$env:VERSION.zip"
+
+          Remove-Item $PackageRoot `
+            -Recurse `
+            -Force `
+            -ErrorAction Ignore
+
+          Remove-Item $ZipFile `
+            -Force `
+            -ErrorAction Ignore
 
           New-Item `
             -ItemType Directory `
-            -Path $PackageRoot `
+            -Path $ModuleRoot `
             -Force | Out-Null
 
           Copy-Item `
             -Path .\output\mua\* `
-            -Destination $PackageRoot `
+            -Destination $ModuleRoot `
             -Recurse `
             -Force
 
           Compress-Archive `
-            -Path .\package\mua `
-            -DestinationPath .\output\mua-$env:VERSION.zip `
+            -Path "$PackageRoot\mua" `
+            -DestinationPath $ZipFile `
             -Force
 
       - name: Create Release
