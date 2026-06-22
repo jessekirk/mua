@@ -131,10 +131,14 @@ jobs:
             -Recurse `
             -Force
 
+          Push-Location $PackageRoot
+
           Compress-Archive `
-            -Path "$PackageRoot\mua" `
-            -DestinationPath $ZipFile `
+            -Path ".\mua" `
+            -DestinationPath "..\output\mua-$env:VERSION.zip" `
             -Force
+
+          Pop-Location
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
