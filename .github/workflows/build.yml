@@ -154,3 +154,10 @@ jobs:
         with:
           name: mua-${{ steps.version.outputs.version }}
           path: ./package/mua/${{ steps.version.outputs.version }}
+
+      - name: Verify Package Layout
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          Test-Path ".\package\mua\$env:VERSION\mua.psd1"
