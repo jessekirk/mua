@@ -1,9 +1,8 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <xml>
   <domain>sofpi</domain>
-  <share>//172.16.30.11/me-prod-users/share/groups/sams-c2</share>
   <sevenZ>
-    <relative>dependencies/build/7z/x64/7za.exe</relative>
+    <relative>dependencies/build/7za.exe</relative>
     <install>C:/Program Files/7-Zip/7z.exe</install>
   </sevenZ>
   <args>a</args>
@@ -20,11 +19,10 @@
   <iargs>-tzip</iargs>
   <win10 value="false" majorVersion="6.0" placeholder="SAMS-MP-v6.0.XX" git="d:/*gitlab*/automation/win10"></win10>
   <win11 value="true" majorVersion="7.0" placeholder="SAMS-C2-v7.0.XX" git="d:/*gitlab*/automation/win11"></win11>
-  <helpers>
-    <signature script="helpers/authenticode.ps1"></signature>
-    <defender script="helpers/defender.ps1"></defender>
-    <edge script="helpers/edge.ps1"></edge>
-    <notepadpp script="helpers/notepad++.ps1"></notepadpp>
-    <trellix script="helpers/trellix.ps1"></trellix>
-  </helpers>
+  <public>
+    <winDefend script="public/windefend.ps1"></winDefend>
+    <edge script="public/edge.ps1"></edge>
+    <nppp script="public/nppp.ps1"></nppp>
+    <trellixv3Dat script="public/trellixv3dat.ps1"></trellixv3Dat>
+  </public>
 </xml>

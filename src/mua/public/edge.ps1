@@ -1,4 +1,4 @@
-$json = Invoke-RestMethod -Uri 'https://edgeupdates.microsoft.com/api/products?view=enterprise'
+$ProgressPreference = 'SilentlyContinue' ; $json = Invoke-RestMethod -Uri 'https://edgeupdates.microsoft.com/api/products?view=enterprise'
 
 $version = $json | Where-Object { $_.product -eq 'stable' } | Select-Object -ExpandProperty releases | Select-Object | Where-Object { $_.platform -eq 'windows' -and $_.architecture -eq 'x64' } `
 | Select-Object -First 1 | Select-Object -ExpandProperty productversion
