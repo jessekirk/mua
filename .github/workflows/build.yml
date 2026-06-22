@@ -76,9 +76,10 @@ jobs:
             -Force | Out-Null
 
           Copy-Item `
-            -Path .\* `
+            -Path .\mua\* `
             -Destination .\output\mua `
-            -Recurse
+            -Recurse `
+            -Exclude output,.git
 
           Update-ModuleManifest `
             -Path .\output\mua.psd1 `
