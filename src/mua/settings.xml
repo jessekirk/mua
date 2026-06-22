@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<xml>
+  <domain>sofpi</domain>
+  <share>//172.16.30.11/me-prod-users/share/groups/sams-c2</share>
+  <sevenZ>
+    <relative>dependencies/build/7z/x64/7za.exe</relative>
+    <install>C:/Program Files/7-Zip/7z.exe</install>
+  </sevenZ>
+  <args>a</args>
+  <args>-mx9</args>
+  <args>-mmt3</args>
+  <args>-md=2048m</args>
+  <args>-m0=lzma2:fb64</args>
+  <args>-ms=16384m</args>
+  <args>-bt</args>
+  <includes filename="bin.zip" folder="dependencies/includes/bin"></includes>
+  <iargs>a</iargs>
+  <iargs>-mx9</iargs>
+  <iargs>-bt</iargs>
+  <iargs>-tzip</iargs>
+  <win10 value="false" majorVersion="6.0" placeholder="SAMS-MP-v6.0.XX" git="d:/*gitlab*/automation/win10"></win10>
+  <win11 value="true" majorVersion="7.0" placeholder="SAMS-C2-v7.0.XX" git="d:/*gitlab*/automation/win11"></win11>
+  <helpers>
+    <signature script="helpers/authenticode.ps1"></signature>
+    <defender script="helpers/defender.ps1"></defender>
+    <edge script="helpers/edge.ps1"></edge>
+    <notepadpp script="helpers/notepad++.ps1"></notepadpp>
+    <trellix script="helpers/trellix.ps1"></trellix>
+  </helpers>
+</xml>

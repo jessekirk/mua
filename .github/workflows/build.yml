@@ -1,0 +1,38 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  version:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate Version
+        shell: pwsh
+        run: |
+          $VersionConfig = Get-Content version.json | ConvertFrom-Json
+
+          $Major = $VersionConfig.Major
+          $Minor = $VersionConfig.Minor
+
+          $Build = $env:GITHUB_RUN_NUMBER
+          $Revision = (git rev-list --count HEAD)
+
+          $Version = "$Major.$Minor.$Build.$Revision"
+
+          Write-Host "Version: $Version"
+
+          echo "VERSION=$Version" >> $env:GITHUB_ENV
+
+      - name: Display Version
+        shell: pwsh
+        run: |
+          Write-Host "Generated version: $env:VERSION"
