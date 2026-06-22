@@ -72,17 +72,17 @@ jobs:
         run: |
           New-Item `
             -ItemType Directory `
-            -Path .\output\mua `
+            -Path .\output `
             -Force | Out-Null
 
           Copy-Item `
-            -Path .\* `
+            -Path .\mua\* `
             -Destination .\output\mua `
             -Recurse `
             -Exclude output,.git
 
           Update-ModuleManifest `
-            -Path .\output\mua.psd1 `
+            -Path .\output\mua\mua.psd1 `
             -ModuleVersion $env:VERSION
 
       - name: Verify Manifest
