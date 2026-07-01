@@ -107,7 +107,10 @@ function publishMuaUpdatesReleasable
     $path = $(Join-Path -Path $fullyqualifieddestinationpath -ChildPath 'Release\apply_monthly_updates.cmd')
     if ($path -match $xml.xml.win10.majorVersion ) { (Get-Content -Path $path) -replace $xml.xml.win10.placeholder, $($fullyqualifieddestinationpath | Split-Path -Leaf) | Set-Content -Path $path -PassThru -Force }
     if ($path -match $xml.xml.win11.majorVersion ) { (Get-Content -Path $path) -replace $xml.xml.win11.placeholder, $($fullyqualifieddestinationpath | Split-Path -Leaf) | Set-Content -Path $path -PassThru -Force }
-
+    if ($path -match $xml.xml.win11.majorVersion)
+    {
+        $i = (Get-Content -Path "$gitPath\monthly updates\*branding\version.json" | ConvertFrom-Json).version ; New-Item -Path $(Join-Path -Path $fullyqualifieddestinationpath -ChildPath 'Release') -Name VERSION -ItemType File -Value $i -Force -Verbose | Out-Null
+    }
     outMuaDotCmdFile ; invokeMuaSha256Hashing
 }
 
@@ -240,6 +243,7 @@ function newMua
     if ($xml.xml.win11.value -eq $true -and $sourcePath -notmatch $xml.xml.win11.majorVersion) { Write-Host -Object "Error : Mismatch between provided path and XML value : $sourcePath" -ForegroundColor Red ; Write-Host -Object "win11 : $($xml.xml.win11.value)`nwin10 : $($xml.xml.win10.value)" ; return Write-Host -Object 'Set correct workspace : getMuaXml -setWorkspace win10' -ForegroundColor Yellow }
 
     (Get-ChildItem -Path "$gitPath\monthly updates" -Recurse | Where-Object { $_.Name -match 'monthly_updates.ps1' }).FullName | Copy-Item -Destination $sourcePath -Container -Force -Verbose
+
     New-Item -Path $sourcePath -Name Branding_Monthly_Updates -ItemType Directory -Force -Verbose | Out-Null ; (Get-ChildItem -Path "$gitPath\monthly updates\*branding" -Recurse | Where-Object { $_.Name -notmatch 'showapps' }).FullName, (Get-ChildItem -Path "$gitPath\baseline" -Recurse -Filter 'wallpaper_*.zip').FullName | Copy-Item -Destination $(Join-Path -Path $sourcePath -ChildPath 'Branding_Monthly_Updates') -Container -Force -Verbose | Copy-Item -Destination $(Join-Path -Path $sourcePath -ChildPath 'branding') -Container -Force -Verbose
 
     outMuaDotCmdFile ; $destinationpath = ($sourcePath | Split-Path -Leaf) + '_' + $getMuaDateTimeUtc + '.7z' ; $fullyqualifieddestinationpath = $sourcePath + $destinationpath
