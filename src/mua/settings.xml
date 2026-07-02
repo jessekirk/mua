@@ -20,6 +20,7 @@
   <win10 value="false" majorVersion="6.0" placeholder="SAMS-MP-v6.0.XX" git="d:/*gitlab*/automation/win10"></win10>
   <win11 value="true" majorVersion="7.0" placeholder="SAMS-C2-v7.0.XX" git="d:/*gitlab*/automation/win11"></win11>
   <public>
+    <sevenzip script="public/7z.ps1"></sevenzip>
     <winDefend script="public/windefend.ps1"></winDefend>
     <edge script="public/edge.ps1"></edge>
     <nppp script="public/nppp.ps1"></nppp>

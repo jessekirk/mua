@@ -2,6 +2,8 @@ $global:x = Get-Module -ListAvailable -Refresh mua ; [xml]$global:xml = Get-Cont
 
 function getMuaDomain { return ((Get-CimInstance -ClassName win32_computersystem).Domain).ToLower().Split('.')[0] }
 
+function getMua7zip { param([parameter(ParameterSetName = 'show')][switch]$showVersion) & $(Join-Path -Path $x.ModuleBase -ChildPath $xml.xml.public.sevenzip.script -Resolve) }
+
 function getMuaMicrosoftEdge { param([parameter(ParameterSetName = 'show')][switch]$showVersion) & $(Join-Path -Path $x.ModuleBase -ChildPath $xml.xml.public.edge.script -Resolve) }
 
 function getMuaWinDefendAvDef { param([parameter(Mandatory)][string]$destinationPath)  & $(Join-Path -Path $x.ModuleBase -ChildPath $xml.xml.public.winDefend.script -Resolve) }
