@@ -109,10 +109,7 @@ function publishMuaUpdatesReleasable
     $path = $(Join-Path -Path $fullyqualifieddestinationpath -ChildPath 'Release\apply_monthly_updates.cmd')
     if ($path -match $xml.xml.win10.majorVersion ) { (Get-Content -Path $path) -replace $xml.xml.win10.placeholder, $($fullyqualifieddestinationpath | Split-Path -Leaf) | Set-Content -Path $path -PassThru -Force }
     if ($path -match $xml.xml.win11.majorVersion ) { (Get-Content -Path $path) -replace $xml.xml.win11.placeholder, $($fullyqualifieddestinationpath | Split-Path -Leaf) | Set-Content -Path $path -PassThru -Force }
-    if ($path -match $xml.xml.win11.majorVersion)
-    {
-        $i = (Get-Content -Path "$gitPath\monthly updates\*branding\version.json" | ConvertFrom-Json).version ; New-Item -Path $(Join-Path -Path $fullyqualifieddestinationpath -ChildPath 'Release') -Name VERSION -ItemType File -Value $i -Force -Verbose | Out-Null
-    }
+    $i = (Get-Content -Path "$gitPath\monthly updates\*branding\version.json" | ConvertFrom-Json).version ; New-Item -Path $(Join-Path -Path $fullyqualifieddestinationpath -ChildPath 'Release') -Name VERSION -ItemType File -Value $i -Force -Verbose | Out-Null
     outMuaDotCmdFile ; invokeMuaSha256Hashing
 }
 
