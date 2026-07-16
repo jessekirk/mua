@@ -57,7 +57,8 @@ function getMuaCompleteBuildTime
 
 function renameMuaUpdatesReleasable
 {
-    Get-ChildItem -Path $fullyqualifieddestinationpath | Where-Object { $_.Name -eq 'Release' } | Rename-Item -NewName $($fullyqualifieddestinationpath | Split-Path -Leaf) -Force -Verbose ; getMuaCompleteBuildTime
+    Get-ChildItem -Path $fullyqualifieddestinationpath | Where-Object { $_.Name -eq 'Release' } | Rename-Item -NewName 'Output' -Force -Verbose
+    Move-Item -Path "$fullyqualifieddestinationpath\Output\*" -Destination $fullyqualifieddestinationpath -Force -Verbose ; Remove-Item -Path "$fullyqualifieddestinationpath\Output" -Force -Verbose ; getMuaCompleteBuildTime
 }
 
 function removeMuaUpdatesAfterwards
@@ -116,11 +117,7 @@ function publishMuaUpdatesReleasable
 function draftMuaPatchTuesdayFolder
 {
     [cmdletbinding()]
-    param
-    (
-        [parameter(Mandatory)][string]$destinationPath,
-        [parameter(ParameterSetName = 'month')][validateset('01-Jan', '02-Feb', '03-Mar', '04-Apr', '05-May', '06-Jun', '07-Jul', '08-Aug', '09-Sep', '10-Oct', '11-Nov', '12-Dec')]$month
-    )
+    param([parameter(Mandatory)][string]$destinationPath, [parameter(ParameterSetName = 'month')][validateset('01-Jan', '02-Feb', '03-Mar', '04-Apr', '05-May', '06-Jun', '07-Jul', '08-Aug', '09-Sep', '10-Oct', '11-Nov', '12-Dec')]$month)
 
     getMuaXml -outNull ; testMuaGit
     switch ($PSCmdlet.ParameterSetName)
@@ -216,11 +213,7 @@ powershell.exe -nologo -file "%~dp0$($file).ps1"
 function draftMuaFolder
 {
     [cmdletbinding()]
-    param
-    (
-        [parameter(Mandatory)][string]$destinationPath,
-        [parameter(Mandatory)][version]$samsVersion
-    )
+    param([parameter(Mandatory)][string]$destinationPath, [parameter(Mandatory)][version]$samsVersion)
 
     getMuaXml -outNull
     if ($xml.xml.win10.value -eq $true -and $samsVersion -match $xml.xml.win10.majorVersion) { New-Item -Path $destinationPath -Name "$($xml.xml.win10.placeholder.Remove(9))$($samsVersion.ToString())" -ItemType Directory -Verbose | Out-Null }
@@ -243,7 +236,15 @@ function newMua
 
     (Get-ChildItem -Path "$gitPath\monthly updates" -Recurse | Where-Object { $_.Name -match 'monthly_updates.ps1' }).FullName | Copy-Item -Destination $sourcePath -Container -Force -Verbose
 
-    New-Item -Path $sourcePath -Name Branding_Monthly_Updates -ItemType Directory -Force -Verbose | Out-Null ; (Get-ChildItem -Path "$gitPath\monthly updates\*branding" -Recurse | Where-Object { $_.Name -notmatch 'showapps' }).FullName, (Get-ChildItem -Path "$gitPath\baseline" -Recurse -Filter 'wallpaper_*.zip').FullName | Copy-Item -Destination $(Join-Path -Path $sourcePath -ChildPath 'Branding_Monthly_Updates') -Container -Force -Verbose | Copy-Item -Destination $(Join-Path -Path $sourcePath -ChildPath 'branding') -Container -Force -Verbose
+    New-Item -Path $sourcePath -Name Branding_Monthly_Updates -ItemType Directory -Force -Verbose | Out-Null
+    if ($xml.xml.win11.value -eq $true)
+    {
+        (Get-ChildItem -Path "$gitPath\monthly updates\*branding" -Recurse | Where-Object { $_.Name -notmatch 'showapps' }).FullName, (Get-ChildItem -Path "$gitPath\baseline" -Recurse -Filter 'wallpaper_*.zip').FullName | Copy-Item -Destination $(Join-Path -Path $sourcePath -ChildPath 'Branding_Monthly_Updates') -Container -Force -Verbose | Copy-Item -Destination $(Join-Path -Path $sourcePath -ChildPath 'branding') -Container -Force -Verbose
+    }
+    if ($xml.xml.win10.value -eq $true)
+    {
+        (Get-ChildItem -Path "$gitPath\monthly updates\*branding" -Recurse).FullName | Copy-Item -Destination $(Join-Path -Path $sourcePath -ChildPath 'Branding_Monthly_Updates') -Container -Force -Verbose | Copy-Item -Destination $(Join-Path -Path $sourcePath -ChildPath 'branding') -Container -Force -Verbose
+    }
 
     outMuaDotCmdFile ; $destinationpath = ($sourcePath | Split-Path -Leaf) + '_' + $getMuaDateTimeUtc + '.7z' ; $fullyqualifieddestinationpath = $sourcePath + $destinationpath
     $files = Get-ChildItem -Path $sourcePath -Recurse ; $files | Unblock-File -Verbose ; $files | ForEach-Object { Write-Verbose -Message "Adding $_ to $destinationpath" -Verbose }
