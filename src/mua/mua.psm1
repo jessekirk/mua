@@ -82,7 +82,7 @@ function invokeMuaSha256Hashing
                 $h = [pscustomobject]@{ name = $i.Path | Split-Path -Leaf ; hash = $i.Hash.ToLower() ; algorithm = $i.algorithm }
                 $array += $h
             }
-            $logfilepath = (Get-ChildItem -Path $fullyqualifieddestinationpath -Recurse -File -Filter '*.7z').FullName.Replace('7z', 'SHASUMS256.txt') ; $array | Format-List | Out-File -FilePath $logfilepath
+            $logfilepath = (Get-ChildItem -Path $fullyqualifieddestinationpath -Recurse -File -Filter '*.7z').FullName.Replace('7z', 'shasums256.txt') ; $array | Format-List | Out-File -FilePath $logfilepath
             Get-ChildItem -Path "$fullyqualifieddestinationpath\Release" -Recurse -Force | Unblock-File -Verbose ; removeMuaUpdatesAfterwards
         }
         'path'
@@ -93,7 +93,7 @@ function invokeMuaSha256Hashing
                 $h = [pscustomobject]@{ name = $i.Path | Split-Path -Leaf ; hash = $i.Hash.ToLower() ; algorithm = $i.algorithm }
                 $array += $h
             }
-            $logfilepath = (Get-ChildItem -Path $path -Recurse -File -Filter '*.7z').FullName.Replace('7z', 'SHASUMS256.txt') ; $array | Format-List | Out-File -FilePath $logfilepath ; Get-ChildItem -Path $path -Recurse -Force | Unblock-File -Verbose
+            $logfilepath = (Get-ChildItem -Path $path -Recurse -File -Filter '*.7z').FullName.Replace('7z', 'shasums256.txt') ; $array | Format-List | Out-File -FilePath $logfilepath ; Get-ChildItem -Path $path -Recurse -Force | Unblock-File -Verbose
         }
     }
 }
