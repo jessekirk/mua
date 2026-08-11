@@ -24,6 +24,5 @@
     <winDefend script="public/windefend.ps1"></winDefend>
     <edge script="public/edge.ps1"></edge>
     <nppp script="public/nppp.ps1"></nppp>
-    <trellixv3Dat script="public/trellixv3dat.ps1"></trellixv3Dat>
   </public>
 </xml>

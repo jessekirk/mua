@@ -10,13 +10,11 @@ function getMuaWinDefendAvDef { param([parameter(Mandatory)][string]$destination
 
 function getMuaNotepadPlusPlus { param([parameter(ParameterSetName = 'show')][switch]$showVersion) & $(Join-Path -Path $x.ModuleBase -ChildPath $xml.xml.public.nppp.script -Resolve) }
 
-function getMuaTrellixv3Dat { param([parameter(ParameterSetName = 'show')][switch]$showVersion) & $(Join-Path -Path $x.ModuleBase -ChildPath $xml.xml.public.trellixv3Dat.script -Resolve) }
-
 function getMuaDateTimeUtc
 {
     param([parameter(ParameterSetName = 'log')][switch]$loggingFormat)
     if ($loggingFormat.IsPresent) { return (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ') }
-    return (Get-Date).ToUniversalTime().ToString('yyyyMMddTHHmmZ') # ISO 8601 formatting
+    return (Get-Date).ToUniversalTime().ToString('yyyyMMddTHHmmZ') #ISO 8601 formatting
 }
 
 $script:getMuaDateTimeUtc = getMuaDateTimeUtc ; $script:domain = getMuaDomain
@@ -58,7 +56,8 @@ function getMuaCompleteBuildTime
 function renameMuaUpdatesReleasable
 {
     Get-ChildItem -Path $fullyqualifieddestinationpath | Where-Object { $_.Name -eq 'Release' } | Rename-Item -NewName 'Output' -Force -Verbose
-    Move-Item -Path "$fullyqualifieddestinationpath\Output\*" -Destination $fullyqualifieddestinationpath -Force -Verbose ; Remove-Item -Path "$fullyqualifieddestinationpath\Output" -Force -Verbose ; getMuaCompleteBuildTime
+    Move-Item -Path "$fullyqualifieddestinationpath\Output\*" -Destination $fullyqualifieddestinationpath -Force -Verbose ; Remove-Item -Path "$fullyqualifieddestinationpath\Output" -Force -Verbose
+    Write-Host -Object '' ; Write-Host -Object "Reminder! Don't forget to run 'git' ADD, COMMIT and PUSH your README.md to => repo: $readmedestination." -ForegroundColor Magenta ; getMuaCompleteBuildTime
 }
 
 function removeMuaUpdatesAfterwards
@@ -83,7 +82,7 @@ function invokeMuaSha256Hashing
                 $h = [pscustomobject]@{ name = $i.Path | Split-Path -Leaf ; hash = $i.Hash.ToLower() ; algorithm = $i.algorithm }
                 $array += $h
             }
-            $logfilepath = (Get-ChildItem -Path $fullyqualifieddestinationpath -Recurse -File -Filter '*.7z').FullName.Replace('7z', '7z_Sha256_Hashes.txt') ; $array | Format-List | Out-File -FilePath $logfilepath
+            $logfilepath = (Get-ChildItem -Path $fullyqualifieddestinationpath -Recurse -File -Filter '*.7z').FullName.Replace('7z', 'SHASUMS256.txt') ; $array | Format-List | Out-File -FilePath $logfilepath
             Get-ChildItem -Path "$fullyqualifieddestinationpath\Release" -Recurse -Force | Unblock-File -Verbose ; removeMuaUpdatesAfterwards
         }
         'path'
@@ -94,7 +93,7 @@ function invokeMuaSha256Hashing
                 $h = [pscustomobject]@{ name = $i.Path | Split-Path -Leaf ; hash = $i.Hash.ToLower() ; algorithm = $i.algorithm }
                 $array += $h
             }
-            $logfilepath = (Get-ChildItem -Path $path -Recurse -File -Filter '*.7z').FullName.Replace('7z', '7z_Sha256_Hashes.txt') ; $array | Format-List | Out-File -FilePath $logfilepath ; Get-ChildItem -Path $path -Recurse -Force | Unblock-File -Verbose
+            $logfilepath = (Get-ChildItem -Path $path -Recurse -File -Filter '*.7z').FullName.Replace('7z', 'SHASUMS256.txt') ; $array | Format-List | Out-File -FilePath $logfilepath ; Get-ChildItem -Path $path -Recurse -Force | Unblock-File -Verbose
         }
     }
 }
@@ -245,6 +244,10 @@ function newMua
     {
         (Get-ChildItem -Path "$gitPath\monthly updates\*branding" -Recurse).FullName | Copy-Item -Destination $(Join-Path -Path $sourcePath -ChildPath 'Branding_Monthly_Updates') -Container -Force -Verbose | Copy-Item -Destination $(Join-Path -Path $sourcePath -ChildPath 'branding') -Container -Force -Verbose
     }
+
+    (Get-ChildItem -Path $sourcePath -Directory).Name | Out-File -FilePath $(Join-Path -Path $sourcePath -ChildPath 'README.md')
+    $i = ($sourcePath | Split-Path -Leaf).Split('-')[2] ; $version = Get-ChildItem -Path "$gitPath\monthly updates" -Recurse | Where-Object { $_.Name -eq $i }
+    $script:readmedestination = "$gitPath\monthly updates\$version" ; if ($null -ne $version) { Move-Item -Path $sourcePath\*.md -Destination $readmedestination -Force -Verbose } else { throw 'No git "version" folder found to copy the "README.md" into' }
 
     outMuaDotCmdFile ; $destinationpath = ($sourcePath | Split-Path -Leaf) + '_' + $getMuaDateTimeUtc + '.7z' ; $fullyqualifieddestinationpath = $sourcePath + $destinationpath
     $files = Get-ChildItem -Path $sourcePath -Recurse ; $files | Unblock-File -Verbose ; $files | ForEach-Object { Write-Verbose -Message "Adding $_ to $destinationpath" -Verbose }
