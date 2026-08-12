@@ -1,25 +1,25 @@
 $global:x = Get-Module -ListAvailable -Refresh mua ; [xml]$global:xml = Get-Content -Path (Join-Path -Path $x.ModuleBase -ChildPath settings.xml) ; $global:invalidSettingsXmlFoundErrorMessage = 'The settings.xml has conflicting data. Verify these properties are set correctly for both win10 and win11 values.'
 
-function getMuaDomain { return ((Get-CimInstance -ClassName win32_computersystem).Domain).ToLower().Split('.')[0] }
+function gtdomain { return ((Get-CimInstance -ClassName win32_computersystem).Domain).ToLower().Split('.')[0] }
 
-function getMua7zip { param([parameter(ParameterSetName = 'show')][switch]$showVersion) & $(Join-Path -Path $x.ModuleBase -ChildPath $xml.xml.public.sevenzip.script -Resolve) }
+function gt7zip { param([parameter(ParameterSetName = 'show')][switch]$showVersion) & $(Join-Path -Path $x.ModuleBase -ChildPath $xml.xml.public.sevenzip.script -Resolve) }
 
-function getMuaMicrosoftEdge { param([parameter(ParameterSetName = 'show')][switch]$showVersion) & $(Join-Path -Path $x.ModuleBase -ChildPath $xml.xml.public.edge.script -Resolve) }
+function gtedge { param([parameter(ParameterSetName = 'show')][switch]$showVersion) & $(Join-Path -Path $x.ModuleBase -ChildPath $xml.xml.public.edge.script -Resolve) }
 
-function getMuaWinDefendAvDef { param([parameter(Mandatory)][string]$destinationPath)  & $(Join-Path -Path $x.ModuleBase -ChildPath $xml.xml.public.winDefend.script -Resolve) }
+function gtavdefinitions { param([parameter(Mandatory)][string]$destinationPath)  & $(Join-Path -Path $x.ModuleBase -ChildPath $xml.xml.public.winDefend.script -Resolve) }
 
-function getMuaNotepadPlusPlus { param([parameter(ParameterSetName = 'show')][switch]$showVersion) & $(Join-Path -Path $x.ModuleBase -ChildPath $xml.xml.public.nppp.script -Resolve) }
+function gtnpp { param([parameter(ParameterSetName = 'show')][switch]$showVersion) & $(Join-Path -Path $x.ModuleBase -ChildPath $xml.xml.public.nppp.script -Resolve) }
 
-function getMuaDateTimeUtc
+function gttimeutc
 {
     param([parameter(ParameterSetName = 'log')][switch]$loggingFormat)
     if ($loggingFormat.IsPresent) { return (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ') }
     return (Get-Date).ToUniversalTime().ToString('yyyyMMddTHHmmZ') #ISO 8601 formatting
 }
 
-$script:getMuaDateTimeUtc = getMuaDateTimeUtc ; $script:domain = getMuaDomain
+$script:gttimeutc = gttimeutc ; $script:domain = gtdomain
 
-function getMuaXml
+function gtxml
 {
     [cmdletbinding(DefaultParameterSetName = 'default')]
     param([parameter(ParameterSetName = 'workspace')][validateset('win10', 'win11')]$setWorkspace, [parameter(ParameterSetName = 'null')][switch]$outNull)
@@ -39,35 +39,35 @@ function getMuaXml
     }
 }
 
-function testMuaGit
+function tegit
 {
-    getMuaXml -outNull
+    gtxml -outNull
     if ($xml.xml.win10.value -eq $true) { if ($script:gitPath = (Resolve-Path -Path $xml.xml.win10.git -ErrorAction SilentlyContinue).Path) { if ($null -ne $gitpath) { return } } }
     if ($xml.xml.win11.value -eq $true) { if ($script:gitPath = (Resolve-Path -Path $xml.xml.win11.git -ErrorAction SilentlyContinue).Path) { if ($null -ne $gitpath) { return } } }
     if (-not(Test-Path -Path "$gitPath\.git")) { throw 'This requires a Git repository. Verify path to only 1 valid repo.' }
 }
 
-function getMuaCompleteBuildTime
+function gtbuildtime
 {
     $endtime = [datetime]::Now ; $t = $endtime - $starttime
     Write-Host -Object '' ; Write-Host -Object "BuildTime : $([System.Math]::Round($t.TotalMinutes,2))m" -ForegroundColor Cyan ; Write-Host -Object ''
 }
 
-function renameMuaUpdatesReleasable
+function rnreleasable
 {
     Get-ChildItem -Path $fullyqualifieddestinationpath | Where-Object { $_.Name -eq 'Release' } | Rename-Item -NewName 'Output' -Force -Verbose
     Move-Item -Path "$fullyqualifieddestinationpath\Output\*" -Destination $fullyqualifieddestinationpath -Force -Verbose ; Remove-Item -Path "$fullyqualifieddestinationpath\Output" -Force -Verbose
-    Write-Host -Object '' ; Write-Host -Object "Reminder! Don't forget to run 'git' ADD, COMMIT and PUSH your README.md to => repo: $readmedestination." -ForegroundColor Magenta ; getMuaCompleteBuildTime
+    Write-Host -Object '' ; Write-Host -Object "Reminder! Don't forget to run 'git' ADD, COMMIT and PUSH your README.md to => repo: $readmedestination." -ForegroundColor Magenta ; gtbuildtime
 }
 
-function removeMuaUpdatesAfterwards
+function rmupdates
 {
     $path = Get-ChildItem -Path $fullyqualifieddestinationpath -Recurse | Where-Object { $_.Name -ne 'Release' }
-    if ($keep -eq $true) { $path | ForEach-Object { Write-Host -Object "Keep file/folder '$_'" -ForegroundColor Cyan } ; renameMuaUpdatesReleasable ; return }
-    Get-ChildItem -Path $fullyqualifieddestinationpath | Where-Object { $_.Name -ne 'Release' } | Remove-Item -Recurse -Force -Verbose ; renameMuaUpdatesReleasable
+    if ($keep -eq $true) { $path | ForEach-Object { Write-Host -Object "Keep file/folder '$_'" -ForegroundColor Cyan } ; rnreleasable ; return }
+    Get-ChildItem -Path $fullyqualifieddestinationpath | Where-Object { $_.Name -ne 'Release' } | Remove-Item -Recurse -Force -Verbose ; rnreleasable
 }
 
-function invokeSha256sums
+function hasha256sums
 {
     [cmdletbinding()]
     param([parameter(ParameterSetName = 'path')][string]$path)
@@ -83,7 +83,7 @@ function invokeSha256sums
                 $array += $h
             }
             $logfilepath = (Get-ChildItem -Path $fullyqualifieddestinationpath -Recurse -File -Filter '*.7z').FullName.Replace('.7z', '.7z_sha256sums.txt') ; $array | Format-List | Out-File -FilePath $logfilepath
-            Get-ChildItem -Path "$fullyqualifieddestinationpath\Release" -Recurse -Force | Unblock-File -Verbose ; removeMuaUpdatesAfterwards
+            Get-ChildItem -Path "$fullyqualifieddestinationpath\Release" -Recurse -Force | Unblock-File -Verbose ; rmupdates
         }
         'path'
         {
@@ -98,7 +98,7 @@ function invokeSha256sums
     }
 }
 
-function publishMuaUpdatesReleasable
+function mkreleasable
 {
     $fullyqualifieddestinationpath = $fullyqualifieddestinationpath | Split-Path -Parent ; $fullyqualifieddestinationpath = $fullyqualifieddestinationpath += '\'
     New-Item -Path $fullyqualifieddestinationpath -Name 'Release' -ItemType Directory -Force -Verbose | Out-Null
@@ -110,15 +110,15 @@ function publishMuaUpdatesReleasable
     if ($path -match $xml.xml.win10.majorVersion ) { (Get-Content -Path $path) -replace $xml.xml.win10.placeholder, $($fullyqualifieddestinationpath | Split-Path -Leaf) | Set-Content -Path $path -PassThru -Force }
     if ($path -match $xml.xml.win11.majorVersion ) { (Get-Content -Path $path) -replace $xml.xml.win11.placeholder, $($fullyqualifieddestinationpath | Split-Path -Leaf) | Set-Content -Path $path -PassThru -Force }
     $i = (Get-Content -Path "$gitPath\monthly updates\*branding\version.json" | ConvertFrom-Json).version ; New-Item -Path $(Join-Path -Path $fullyqualifieddestinationpath -ChildPath 'Release') -Name VERSION -ItemType File -Value $i -Force -Verbose | Out-Null
-    outMuaDotCmdFile ; invokeSha256sums
+    mkcmd ; hasha256sums
 }
 
-function draftMuaPatchTuesdayFolder
+function mkpatchtuesfolder
 {
     [cmdletbinding()]
     param([parameter(Mandatory)][string]$destinationPath, [parameter(ParameterSetName = 'month')][validateset('01-Jan', '02-Feb', '03-Mar', '04-Apr', '05-May', '06-Jun', '07-Jul', '08-Aug', '09-Sep', '10-Oct', '11-Nov', '12-Dec')]$month)
 
-    getMuaXml -outNull ; testMuaGit
+    gtxml -outNull ; tegit
     switch ($PSCmdlet.ParameterSetName)
     {
         default
@@ -139,17 +139,17 @@ function draftMuaPatchTuesdayFolder
     (Get-ChildItem -Path "$gitPath\monthly updates" -Recurse | Where-Object { $_.Name -match 'windows updates.ps1' }).FullName | Copy-Item -Destination "$($(Resolve-Path -Path "$destinationPath\Windows Security Updates*\").Path)" -Container -Force -Verbose
 }
 
-function draftMuaWinDefendAvDefFolder
+function mkavfolder
 {
     [cmdletbinding()]
     param([parameter(Mandatory)][string]$destinationPath)
 
-    getMuaXml -outNull ; testMuaGit
+    gtxml -outNull ; tegit
     if (-not(Test-Path -Path $destinationPath -ErrorAction SilentlyContinue)) { throw "The source path $destinationPath does not exist." } ; if ($xml.xml.win11.value -ne $true ) { throw "This function is only applicable to Windows 11 (e.g.:$($xml.xml.win11.placeholder))" }
-    testMuaGit ; New-Item -Path "$destinationPath\Windows Defender Definitions_Latest_Signatures\Latest" -ItemType Directory -Force -Verbose | Out-Null ; (Get-ChildItem -Path "$gitPath\monthly updates\_windefend\" | Where-Object { $_.Extension -eq '.ps1' }).FullName | Copy-Item -Destination $(Join-Path -Path $destinationPath -ChildPath 'Windows Defender Definitions_Latest_Signatures') -Container -Force -Verbose
+    tegit ; New-Item -Path "$destinationPath\Windows Defender Definitions_Latest_Signatures\Latest" -ItemType Directory -Force -Verbose | Out-Null ; (Get-ChildItem -Path "$gitPath\monthly updates\_windefend\" | Where-Object { $_.Extension -eq '.ps1' }).FullName | Copy-Item -Destination $(Join-Path -Path $destinationPath -ChildPath 'Windows Defender Definitions_Latest_Signatures') -Container -Force -Verbose
 }
 
-function outMuaDotCmdFile
+function mkcmd
 {
     [cmdletbinding(DefaultParameterSetName = 'default')]
     param([parameter(ParameterSetName = 'script')][string]$sourceScript, [parameter(ParameterSetName = 'script')][switch]$noExit)
@@ -209,29 +209,29 @@ powershell.exe -nologo -file "%~dp0$($file).ps1"
     }
 }
 
-function draftMuaFolder
+function mkupdatefolder
 {
     [cmdletbinding()]
     param([parameter(Mandatory)][string]$destinationPath, [parameter(Mandatory)][version]$samsVersion)
 
-    getMuaXml -outNull
+    gtxml -outNull
     if ($xml.xml.win10.value -eq $true -and $samsVersion -match $xml.xml.win10.majorVersion) { New-Item -Path $destinationPath -Name "$($xml.xml.win10.placeholder.Remove(9))$($samsVersion.ToString())" -ItemType Directory -Verbose | Out-Null }
     elseif ($xml.xml.win11.value -eq $true -and $samsVersion -match $xml.xml.win11.majorVersion) { New-Item -Path $destinationPath -Name "$($xml.xml.win11.placeholder.Remove(9))$($samsVersion.ToString())" -ItemType Directory -Verbose | Out-Null }
     else { throw $invalidSettingsXmlFoundErrorMessage }
 }
 
-function newMua
+function mkupdate
 {
     [cmdletbinding()]
     param([parameter(Mandatory)][string]$sourcePath, [parameter()][switch]$keepUpdates)
 
-    getMuaXml -outNull ; testMuaGit ; $script:starttime = [datetime]::Now ; $global:fullyqualifiedcmdpath = $sourcePath
+    gtxml -outNull ; tegit ; $script:starttime = [datetime]::Now ; $global:fullyqualifiedcmdpath = $sourcePath
 
     if ($keepUpdates.IsPresent) { $script:keep = $true } else { $keep = $false }
     if (-not(Test-Path -Path $sourcePath -ErrorAction SilentlyContinue)) { throw "The source path $sourcePath does not exist." }
     if (-not($sourcePath.EndsWith('\'))) { $sourcePath += '\' }
-    if ($xml.xml.win10.value -eq $true -and $sourcePath -notmatch $xml.xml.win10.majorVersion) { Write-Host -Object "Error : Mismatch between provided path and XML value : $sourcePath" -ForegroundColor Red ; Write-Host -Object "win10 : $($xml.xml.win10.value)`nwin11 : $($xml.xml.win11.value)" ; return Write-Host -Object 'Set correct workspace : getMuaXml -setWorkspace win11' -ForegroundColor Yellow }
-    if ($xml.xml.win11.value -eq $true -and $sourcePath -notmatch $xml.xml.win11.majorVersion) { Write-Host -Object "Error : Mismatch between provided path and XML value : $sourcePath" -ForegroundColor Red ; Write-Host -Object "win11 : $($xml.xml.win11.value)`nwin10 : $($xml.xml.win10.value)" ; return Write-Host -Object 'Set correct workspace : getMuaXml -setWorkspace win10' -ForegroundColor Yellow }
+    if ($xml.xml.win10.value -eq $true -and $sourcePath -notmatch $xml.xml.win10.majorVersion) { Write-Host -Object "Error : Mismatch between provided path and XML value : $sourcePath" -ForegroundColor Red ; Write-Host -Object "win10 : $($xml.xml.win10.value)`nwin11 : $($xml.xml.win11.value)" ; return Write-Host -Object 'Set correct workspace : gtxml -setWorkspace win11' -ForegroundColor Yellow }
+    if ($xml.xml.win11.value -eq $true -and $sourcePath -notmatch $xml.xml.win11.majorVersion) { Write-Host -Object "Error : Mismatch between provided path and XML value : $sourcePath" -ForegroundColor Red ; Write-Host -Object "win11 : $($xml.xml.win11.value)`nwin10 : $($xml.xml.win10.value)" ; return Write-Host -Object 'Set correct workspace : gtxml -setWorkspace win10' -ForegroundColor Yellow }
 
     (Get-ChildItem -Path "$gitPath\monthly updates" -Recurse | Where-Object { $_.Name -match 'monthly_updates.ps1' }).FullName | Copy-Item -Destination $sourcePath -Container -Force -Verbose
 
@@ -249,10 +249,10 @@ function newMua
     $i = ($sourcePath | Split-Path -Leaf).Split('-')[2] ; $version = Get-ChildItem -Path "$gitPath\monthly updates" -Recurse | Where-Object { $_.Name -eq $i }
     $script:readmedestination = "$gitPath\monthly updates\$version" ; if ($null -ne $version) { Move-Item -Path $sourcePath\*.md -Destination $readmedestination -Force -Verbose } else { throw 'No git "version" folder found to copy the "README.md" into' }
 
-    outMuaDotCmdFile ; $destinationpath = ($sourcePath | Split-Path -Leaf) + '_' + $getMuaDateTimeUtc + '.7z' ; $fullyqualifieddestinationpath = $sourcePath + $destinationpath
+    mkcmd ; $destinationpath = ($sourcePath | Split-Path -Leaf) + '_' + $gttimeutc + '.7z' ; $fullyqualifieddestinationpath = $sourcePath + $destinationpath
     $files = Get-ChildItem -Path $sourcePath -Recurse ; $files | Unblock-File -Verbose ; $files | ForEach-Object { Write-Verbose -Message "Adding $_ to $destinationpath" -Verbose }
 
     if ($domain -eq $xml.xml.domain) { & $xml.xml.sevenZ.install $xml.xml.args $fullyqualifieddestinationpath $sourcePath }
     else { & (Join-Path -Path $x.ModuleBase -ChildPath $xml.xml.sevenZ.relative -Resolve) $xml.xml.args $fullyqualifieddestinationpath $sourcePath }
-    publishMuaUpdatesReleasable
+    mkreleasable
 }
