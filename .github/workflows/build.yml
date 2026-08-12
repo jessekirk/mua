@@ -15,122 +15,338 @@ jobs:
     runs-on: windows-latest
 
     steps:
+      # ------------------------------------------------------------
+      # Checkout repository
+      # ------------------------------------------------------------
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # ------------------------------------------------------------
+      # Generate module version
+      #
+      # Version format:
+      #   Major.Minor.GitHubRunNumber.GitRevisionCount
+      #
+      # Example:
+      #   5.0.29.47
+      # ------------------------------------------------------------
       - name: Generate Version
         id: version
         shell: pwsh
         run: |
-          $VersionConfig = Get-Content version.json | ConvertFrom-Json
+          $VersionConfig = Get-Content ".\version.json" -Raw | ConvertFrom-Json
 
           $Major = $VersionConfig.Major
           $Minor = $VersionConfig.Minor
 
           $Build = $env:GITHUB_RUN_NUMBER
-          $Revision = (git rev-list --count HEAD)
+          $Revision = git rev-list --count HEAD
 
           $Version = "$Major.$Minor.$Build.$Revision"
 
+          Write-Host "Major   = $Major"
+          Write-Host "Minor   = $Minor"
+          Write-Host "Build   = $Build"
+          Write-Host "Revision = $Revision"
+          Write-Host ""
           Write-Host "Generated Version: $Version"
 
           "version=$Version" >> $env:GITHUB_OUTPUT
 
+      # ------------------------------------------------------------
+      # Display generated version
+      # ------------------------------------------------------------
       - name: Show Version
         shell: pwsh
         run: |
           Write-Host "Version = ${{ steps.version.outputs.version }}"
 
-      - name: Create Tag
-        shell: pwsh
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-          $Version = "${{ steps.version.outputs.version }}"
-
-          if (git tag --list "v$Version") {
-            Write-Host "Tag already exists."
-          }
-          else {
-            git tag "v$Version"
-            git push origin "v$Version"
-          }
-
-      - name: Debug Files
-        shell: pwsh
-        run: |
-          Get-Location
-          Get-ChildItem -Recurse
-
-      - name: Package Module
+      # ------------------------------------------------------------
+      # Prepare manifest
+      #
+      # The source manifest is NOT modified in Git.
+      #
+      # Instead, the source module is copied to output and the
+      # generated manifest metadata is applied there.
+      #
+      # This prevents the workflow from committing to master and
+      # triggering itself repeatedly.
+      # ------------------------------------------------------------
+      - name: Prepare Module Manifest
         shell: pwsh
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           $Source = ".\src\mua"
           $Dest = ".\output\mua"
+          $SourceManifest = Join-Path $Source "mua.psd1"
+          $DestManifest = Join-Path $Dest "mua.psd1"
+
+          if (!(Test-Path $SourceManifest)) {
+            throw "Source manifest missing: $SourceManifest"
+          }
+
+          Write-Host "Source manifest:"
+          Write-Host $SourceManifest
+          Write-Host ""
+
+          # ----------------------------------------------------------
+          # Recreate output directory
+          # ----------------------------------------------------------
+          Remove-Item `
+            -Path $Dest `
+            -Recurse `
+            -Force `
+            -ErrorAction Ignore
 
           New-Item `
             -ItemType Directory `
             -Path $Dest `
             -Force | Out-Null
 
+          # ----------------------------------------------------------
+          # Copy source module to output
+          # ----------------------------------------------------------
           Copy-Item `
             -Path "$Source\*" `
             -Destination $Dest `
             -Recurse `
             -Force
 
-          Write-Host "Copied files:"
-          Get-ChildItem $Dest -Recurse
+          if (!(Test-Path $DestManifest)) {
+            throw "Destination manifest missing: $DestManifest"
+          }
 
-          $Manifest = Join-Path $Dest "mua.psd1"
+          # ----------------------------------------------------------
+          # Read manifest while preserving its existing formatting
+          # and comments.
+          # ----------------------------------------------------------
+          $ManifestContent = Get-Content $DestManifest -Raw
+
+          # ----------------------------------------------------------
+          # Update ModuleVersion
+          # ----------------------------------------------------------
+          $ModuleVersionPattern = "(?m)^(\s*ModuleVersion\s*=\s*)['""]([^'""]*)['""]"
+
+          if ($ManifestContent -notmatch $ModuleVersionPattern) {
+            throw "ModuleVersion entry was not found in $DestManifest"
+          }
+
+          $ManifestContent = $ManifestContent -replace `
+            $ModuleVersionPattern, `
+            "`${1}'$env:VERSION'"
+
+          # ----------------------------------------------------------
+          # Update Generated on comment
+          #
+          # Example:
+          #   # Generated on: 7/16/2026
+          #
+          # becomes:
+          #   # Generated on: 8/12/2026
+          # ----------------------------------------------------------
+          $GeneratedOn = (Get-Date).ToString("M/d/yyyy")
+
+          $GeneratedOnPattern = "(?m)^(\s*#\s*Generated on:\s*).*$"
+
+          if ($ManifestContent -notmatch $GeneratedOnPattern) {
+            throw "Generated on comment was not found in $DestManifest"
+          }
+
+          $ManifestContent = $ManifestContent -replace `
+            $GeneratedOnPattern, `
+            "`${1}$GeneratedOn"
+
+          # ----------------------------------------------------------
+          # Write updated manifest
+          # ----------------------------------------------------------
+          Set-Content `
+            -Path $DestManifest `
+            -Value $ManifestContent `
+            -Encoding utf8
+
+          Write-Host ""
+          Write-Host "Updated manifest:"
+          Write-Host "============================================================"
+          Get-Content $DestManifest
+          Write-Host "============================================================"
+          Write-Host ""
+
+          Write-Host "Generated ModuleVersion: $env:VERSION"
+          Write-Host "Generated On:           $GeneratedOn"
+
+      # ------------------------------------------------------------
+      # Debug output files
+      # ------------------------------------------------------------
+      - name: Debug Files
+        shell: pwsh
+        run: |
+          Write-Host "Current location:"
+          Get-Location
+
+          Write-Host ""
+          Write-Host "Repository files:"
+          Get-ChildItem -Recurse
+
+          Write-Host ""
+          Write-Host "Output files:"
+          Get-ChildItem ".\output" -Recurse
+
+      # ------------------------------------------------------------
+      # Verify generated manifest BEFORE creating the tag.
+      #
+      # This ensures that we do not create a release tag if the
+      # manifest metadata is incorrect.
+      # ------------------------------------------------------------
+      - name: Verify Manifest
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $Manifest = ".\output\mua\mua.psd1"
 
           if (!(Test-Path $Manifest)) {
             throw "Manifest missing: $Manifest"
           }
 
-          Update-ModuleManifest `
-            -Path $Manifest `
-            -ModuleVersion $env:VERSION
+          Write-Host "Testing manifest:"
+          Write-Host $Manifest
+          Write-Host ""
 
-      - name: Verify Manifest
+          $Module = Test-ModuleManifest $Manifest
+
+          Write-Host "Manifest ModuleVersion = $($Module.Version)"
+          Write-Host "Expected ModuleVersion = $env:VERSION"
+
+          # ----------------------------------------------------------
+          # Verify PowerShell sees the expected module version.
+          # ----------------------------------------------------------
+          if ($Module.Version.ToString() -ne $env:VERSION) {
+            throw "Manifest version mismatch. Expected '$env:VERSION' but found '$($Module.Version)'."
+          }
+
+          # ----------------------------------------------------------
+          # Verify Generated on exists.
+          # ----------------------------------------------------------
+          $ManifestContent = Get-Content $Manifest -Raw
+
+          $GeneratedOnPattern = '(?m)^\s*#\s*Generated on:\s*\d{1,2}/\d{1,2}/\d{4}\s*$'
+
+          if ($ManifestContent -notmatch $GeneratedOnPattern) {
+            throw "Generated on date was not found in the manifest."
+          }
+
+          # ----------------------------------------------------------
+          # Display the generated date.
+          # ----------------------------------------------------------
+          $GeneratedOnMatch = [regex]::Match(
+            $ManifestContent,
+            '(?m)^\s*#\s*Generated on:\s*(.+?)\s*$'
+          )
+
+          if ($GeneratedOnMatch.Success) {
+            Write-Host "Generated On = $($GeneratedOnMatch.Groups[1].Value)"
+          }
+
+          Write-Host ""
+          Write-Host "Manifest verification successful."
+
+      # ------------------------------------------------------------
+      # Create Git tag AFTER manifest preparation/verification.
+      #
+      # IMPORTANT:
+      # The manifest is intentionally not committed to master.
+      # The tag identifies the source commit associated with this
+      # build, while the generated manifest is contained in the
+      # release artifact.
+      # ------------------------------------------------------------
+      - name: Create Tag
         shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          Test-ModuleManifest .\output\mua\mua.psd1
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
 
+          $Tag = "v$env:VERSION"
+
+          Write-Host "Checking for existing tag: $Tag"
+
+          $ExistingTag = git tag --list $Tag
+
+          if ($ExistingTag) {
+            Write-Host "Tag already exists: $Tag"
+          }
+          else {
+            Write-Host "Creating tag: $Tag"
+
+            git tag $Tag
+
+            Write-Host "Pushing tag: $Tag"
+
+            git push origin $Tag
+          }
+
+      # ------------------------------------------------------------
+      # Prepare versioned package
+      #
+      # Final structure:
+      #
+      # package/
+      #   mua/
+      #     5.0.29.47/
+      #       mua.psd1
+      #       mua.psm1
+      #       ...
+      # ------------------------------------------------------------
       - name: Prepare Versioned Package
         shell: pwsh
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           $PackageRoot = ".\package"
-          $ModuleRoot = "$PackageRoot\mua\$env:VERSION"
+          $ModuleRoot = Join-Path $PackageRoot "mua\$env:VERSION"
           $ZipFile = ".\output\mua-$env:VERSION.zip"
 
-          Remove-Item $PackageRoot `
+          # ----------------------------------------------------------
+          # Clean previous package/output ZIP
+          # ----------------------------------------------------------
+          Remove-Item `
+            -Path $PackageRoot `
             -Recurse `
             -Force `
             -ErrorAction Ignore
 
-          Remove-Item $ZipFile `
+          Remove-Item `
+            -Path $ZipFile `
             -Force `
             -ErrorAction Ignore
 
+          # ----------------------------------------------------------
+          # Create versioned package directory
+          # ----------------------------------------------------------
           New-Item `
             -ItemType Directory `
             -Path $ModuleRoot `
             -Force | Out-Null
 
+          # ----------------------------------------------------------
+          # Copy generated module into versioned package
+          # ----------------------------------------------------------
           Copy-Item `
-            -Path .\output\mua\* `
+            -Path ".\output\mua\*" `
             -Destination $ModuleRoot `
             -Recurse `
             -Force
 
+          Write-Host "Package contents:"
+          Get-ChildItem $ModuleRoot -Recurse
+
+          # ----------------------------------------------------------
+          # Create ZIP
+          # ----------------------------------------------------------
           Push-Location $PackageRoot
 
           Compress-Archive `
@@ -140,6 +356,78 @@ jobs:
 
           Pop-Location
 
+          Write-Host ""
+          Write-Host "Created package:"
+          Write-Host $ZipFile
+
+      # ------------------------------------------------------------
+      # Verify the final package contains the expected manifest.
+      # ------------------------------------------------------------
+      - name: Verify Package Manifest
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $Manifest = ".\package\mua\$env:VERSION\mua.psd1"
+
+          if (!(Test-Path $Manifest)) {
+            throw "Packaged manifest missing: $Manifest"
+          }
+
+          $Module = Test-ModuleManifest $Manifest
+
+          Write-Host "Packaged ModuleVersion = $($Module.Version)"
+          Write-Host "Expected ModuleVersion  = $env:VERSION"
+
+          if ($Module.Version.ToString() -ne $env:VERSION) {
+            throw "Packaged manifest version mismatch."
+          }
+
+          $ManifestContent = Get-Content $Manifest -Raw
+
+          $GeneratedOnPattern = '(?m)^\s*#\s*Generated on:\s*\d{1,2}/\d{1,2}/\d{4}\s*$'
+
+          if ($ManifestContent -notmatch $GeneratedOnPattern) {
+            throw "Generated on date is missing from packaged manifest."
+          }
+
+          Write-Host ""
+          Write-Host "Final packaged manifest:"
+          Write-Host "============================================================"
+          Get-Content $Manifest
+          Write-Host "============================================================"
+          Write-Host ""
+          Write-Host "Packaged manifest verification successful."
+
+      # ------------------------------------------------------------
+      # Verify final package layout.
+      # ------------------------------------------------------------
+      - name: Verify Package Layout
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $PackagePath = ".\package\mua\$env:VERSION"
+
+          if (!(Test-Path $PackagePath)) {
+            throw "Package directory missing: $PackagePath"
+          }
+
+          $Manifest = Join-Path $PackagePath "mua.psd1"
+
+          if (!(Test-Path $Manifest)) {
+            throw "mua.psd1 missing from package: $Manifest"
+          }
+
+          Write-Host "Package layout verified:"
+          Write-Host $PackagePath
+          Write-Host ""
+
+          Get-ChildItem $PackagePath -Recurse
+
+      # ------------------------------------------------------------
+      # Create GitHub Release
+      # ------------------------------------------------------------
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -149,15 +437,11 @@ jobs:
           files: |
             output/mua-${{ steps.version.outputs.version }}.zip
 
+      # ------------------------------------------------------------
+      # Upload module as GitHub Actions artifact
+      # ------------------------------------------------------------
       - name: Upload Module
         uses: actions/upload-artifact@v4
         with:
           name: mua-${{ steps.version.outputs.version }}
           path: ./package/mua/${{ steps.version.outputs.version }}
-
-      - name: Verify Package Layout
-        shell: pwsh
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          Test-Path ".\package\mua\$env:VERSION\mua.psd1"
