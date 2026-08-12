@@ -67,7 +67,7 @@ function removeMuaUpdatesAfterwards
     Get-ChildItem -Path $fullyqualifieddestinationpath | Where-Object { $_.Name -ne 'Release' } | Remove-Item -Recurse -Force -Verbose ; renameMuaUpdatesReleasable
 }
 
-function invokeMuaSha256Hashing
+function invokeSha256sums
 {
     [cmdletbinding()]
     param([parameter(ParameterSetName = 'path')][string]$path)
@@ -82,7 +82,7 @@ function invokeMuaSha256Hashing
                 $h = [pscustomobject]@{ name = $i.Path | Split-Path -Leaf ; hash = $i.Hash.ToLower() ; algorithm = $i.algorithm }
                 $array += $h
             }
-            $logfilepath = (Get-ChildItem -Path $fullyqualifieddestinationpath -Recurse -File -Filter '*.7z').FullName.Replace('7z', 'shasums256.txt') ; $array | Format-List | Out-File -FilePath $logfilepath
+            $logfilepath = (Get-ChildItem -Path $fullyqualifieddestinationpath -Recurse -File -Filter '*.7z').FullName.Replace('.7z', '.7z_sha256sums.txt') ; $array | Format-List | Out-File -FilePath $logfilepath
             Get-ChildItem -Path "$fullyqualifieddestinationpath\Release" -Recurse -Force | Unblock-File -Verbose ; removeMuaUpdatesAfterwards
         }
         'path'
@@ -93,7 +93,7 @@ function invokeMuaSha256Hashing
                 $h = [pscustomobject]@{ name = $i.Path | Split-Path -Leaf ; hash = $i.Hash.ToLower() ; algorithm = $i.algorithm }
                 $array += $h
             }
-            $logfilepath = (Get-ChildItem -Path $path -Recurse -File -Filter '*.7z').FullName.Replace('7z', 'shasums256.txt') ; $array | Format-List | Out-File -FilePath $logfilepath ; Get-ChildItem -Path $path -Recurse -Force | Unblock-File -Verbose
+            $logfilepath = (Get-ChildItem -Path $path -Recurse -File -Filter '*.7z').FullName.Replace('.7z', '.7z_sha256sums.txt') ; $array | Format-List | Out-File -FilePath $logfilepath ; Get-ChildItem -Path $path -Recurse -Force | Unblock-File -Verbose
         }
     }
 }
@@ -110,7 +110,7 @@ function publishMuaUpdatesReleasable
     if ($path -match $xml.xml.win10.majorVersion ) { (Get-Content -Path $path) -replace $xml.xml.win10.placeholder, $($fullyqualifieddestinationpath | Split-Path -Leaf) | Set-Content -Path $path -PassThru -Force }
     if ($path -match $xml.xml.win11.majorVersion ) { (Get-Content -Path $path) -replace $xml.xml.win11.placeholder, $($fullyqualifieddestinationpath | Split-Path -Leaf) | Set-Content -Path $path -PassThru -Force }
     $i = (Get-Content -Path "$gitPath\monthly updates\*branding\version.json" | ConvertFrom-Json).version ; New-Item -Path $(Join-Path -Path $fullyqualifieddestinationpath -ChildPath 'Release') -Name VERSION -ItemType File -Value $i -Force -Verbose | Out-Null
-    outMuaDotCmdFile ; invokeMuaSha256Hashing
+    outMuaDotCmdFile ; invokeSha256sums
 }
 
 function draftMuaPatchTuesdayFolder
