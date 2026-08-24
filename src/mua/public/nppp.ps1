@@ -18,10 +18,9 @@ if ($xml.xml.win10.value -eq $true)
 $urilocation = $w.Links.href | Where-Object { $_ -match 'portable.x64.zip' -and $_ -notmatch 'portable.x64.zip.sig' }
 $path = "$($HOME)\desktop" ; $filename = $urilocation | Split-Path -Leaf ; Write-Verbose -Message "downloading $filename..." -Verbose ; Start-Sleep -Milliseconds 250
 Start-BitsTransfer -Source $urilocation -Destination $path\$filename -TransferType Download ; Start-Sleep -Milliseconds 250 ; $npp = $filename
-$w = Invoke-WebRequest -Uri 'https://github.com/pnedev/comparePlus/' -UseBasicParsing ; $links = $w.Links.href
-$latest = $links | Where-Object { $_ -match '/releases/tag/' -and $_ -match '/tag/cp' } | Sort-Object -Descending | Select-Object -First 1 ; $latest = $latest.Remove(0, 1)
+$w = Invoke-WebRequest -Uri 'https://github.com/pnedev/comparePlus/releases' -UseBasicParsing ; $links = $w.Links.href
+$latest = $links | Where-Object { $_ -match '/tag/cp' } | Sort-Object -Descending | Select-Object -First 1 ; $latest = $latest.Remove(0, 1)
 $version = $latest | Split-Path -Leaf ; $urilocation = "https://github.com/$($latest.Replace('tag','download'))/ComparePlus_$($version)_x64.zip"
-
 Write-Verbose -Message "verifiying url: $urilocation" -Verbose
 try { $w = Invoke-WebRequest -Uri $urilocation -UseBasicParsing -ErrorAction Stop } catch { Write-Host -Object 'invalid url!' -ForegroundColor Red ; return }
 if ($w.StatusCode -eq 200) { Write-Verbose -Message 'statuscode 200, OK.' -Verbose }

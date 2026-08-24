@@ -12,7 +12,7 @@
     RootModule        = 'mua.psm1'
 
     # Version number of this module.
-    ModuleVersion     = '5.0.32.35'
+    ModuleVersion     = '5.0.33.36'
 
     # Supported PSEditions
     # CompatiblePSEditions = @()
@@ -129,6 +129,7 @@
     # DefaultCommandPrefix = ''
 
 }
+
 
 
 
