@@ -67,7 +67,7 @@ function rmupdates
     Get-ChildItem -Path $fullyqualifieddestinationpath | Where-Object { $_.Name -ne 'Release' } | Remove-Item -Recurse -Force -Verbose ; rnreleasable
 }
 
-function hasha256sums
+function hash256sums
 {
     [cmdletbinding()]
     param([parameter(ParameterSetName = 'path')][string]$path)
@@ -108,9 +108,8 @@ function mkreleasable
     (Get-ChildItem -Path "$gitPath\monthly updates" -Recurse | Where-Object { $_.Name -match 'monthly_updates.cmd' }).FullName | Copy-Item -Destination $(Join-Path -Path $fullyqualifieddestinationpath -ChildPath 'Release') -Container -Verbose
     $path = $(Join-Path -Path $fullyqualifieddestinationpath -ChildPath 'Release\apply_monthly_updates.cmd')
     if ($path -match $xml.xml.win10.majorVersion ) { (Get-Content -Path $path) -replace $xml.xml.win10.placeholder, $($fullyqualifieddestinationpath | Split-Path -Leaf) | Set-Content -Path $path -PassThru -Force }
-    if ($path -match $xml.xml.win11.majorVersion ) { (Get-Content -Path $path) -replace $xml.xml.win11.placeholder, $($fullyqualifieddestinationpath | Split-Path -Leaf) | Set-Content -Path $path -PassThru -Force }
-    $i = (Get-Content -Path "$gitPath\monthly updates\*branding\version.json" | ConvertFrom-Json).version ; New-Item -Path $(Join-Path -Path $fullyqualifieddestinationpath -ChildPath 'Release') -Name VERSION -ItemType File -Value $i -Force -Verbose | Out-Null
-    mkcmd ; hasha256sums
+    if ($path -match $xml.xml.win11.majorVersion ) { (Get-Content -Path $path) -replace $xml.xml.win11.placeholder, $($fullyqualifieddestinationpath | Split-Path -Leaf) -replace $($xml.xml.win11.placeholder.Remove(0, 9)), $($fullyqualifieddestinationpath | Split-Path -Leaf).Remove(0, 9) | Set-Content -Path $path -PassThru -Force }
+    mkcmd ; hash256sums
 }
 
 function mkpatchtuesfolder
