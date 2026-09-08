@@ -131,7 +131,7 @@ function mkpatchtuesfolder
 
     if ((Resolve-Path -Path "$destinationPath\Security Updates for Microsoft Windows and Office_*" -ErrorAction SilentlyContinue).Path.Count -ge 1) { throw "$destinationPath has a Windows and Office Updates folder structure." }
     if ($xml.xml.win10.value -eq $true -and $destinationPath -match $xml.xml.win10.majorVersion) { New-Item -Path "$destinationPath\Security Updates for Microsoft Windows and Office_$($yyyyMMdd)" -ItemType Directory -Force -Verbose | Out-Null }
-    elseif ($xml.xml.win11.value -eq $true -and $destinationPath -match $xml.xml.win11.majorVersion) { New-Item -Path "$destinationPath\Security Updates for Microsoft Windows and Office_$($yyyyMMdd)_Release\Cumulative" -ItemType Directory -Force -Verbose | Out-Null }
+    elseif ($xml.xml.win11.value -eq $true -and $destinationPath -match $xml.xml.win11.majorVersion) { New-Item -Path "$destinationPath\Security Updates for Microsoft Windows and Office_$($yyyyMMdd)\Cumulative" -ItemType Directory -Force -Verbose | Out-Null }
     else { throw $invalidSettingsXmlFoundErrorMessage }
 
     (Get-ChildItem -Path "$gitPath\monthly updates" -Recurse | Where-Object { $_.Name -match 'windows updates.ps1' }).FullName | Copy-Item -Destination "$($(Resolve-Path -Path "$destinationPath\Security Updates for Microsoft Windows and Office_*\").Path)" -Container -Force -Verbose
