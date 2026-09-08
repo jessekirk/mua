@@ -57,7 +57,6 @@ function rnreleasable
 {
     Get-ChildItem -Path $fullyqualifieddestinationpath | Where-Object { $_.Name -eq 'Release' } | Rename-Item -NewName 'Output' -Force -Verbose
     Move-Item -Path "$fullyqualifieddestinationpath\Output\*" -Destination $fullyqualifieddestinationpath -Force -Verbose ; Remove-Item -Path "$fullyqualifieddestinationpath\Output" -Force -Verbose
-    Write-Host -Object '' ; Write-Host -Object "Reminder! Don't forget to run 'git' ADD, COMMIT and PUSH your README.txt to => repo: $readmedestination." -ForegroundColor Magenta ; gtbuildtime
 }
 
 function rmupdates
@@ -122,20 +121,20 @@ function mkpatchtuesfolder
     {
         default
         {
-            $d = Get-Date -Day 1 ; $first = $d ; while ($first.DayOfWeek -ne 'Tuesday') { $first = $first.AddDays(1) } ; $second = $first.AddDays(7) ; $yyyyMMdd = $second.ToString('yyyy-MM-dd')
+            $d = Get-Date -Day 1 ; $first = $d ; while ($first.DayOfWeek -ne 'Tuesday') { $first = $first.AddDays(1) } ; $second = $first.AddDays(7) ; $yyyyMMdd = $second.ToString('yyyyMMdd')
         }
         'month'
         {
-            $d = Get-Date -Month $($month.Remove(2)) -Day 1 ; $first = $d ; while ($first.DayOfWeek -ne 'Tuesday') { $first = $first.AddDays(1) } ; $second = $first.AddDays(7) ; $yyyyMMdd = $second.ToString('yyyy-MM-dd')
+            $d = Get-Date -Month $($month.Remove(2)) -Day 1 ; $first = $d ; while ($first.DayOfWeek -ne 'Tuesday') { $first = $first.AddDays(1) } ; $second = $first.AddDays(7) ; $yyyyMMdd = $second.ToString('yyyyMMdd')
         }
     }
 
-    if ((Resolve-Path -Path "$destinationPath\Windows Security Updates_*" -ErrorAction SilentlyContinue).Path.Count -ge 1) { throw "$destinationPath has a Windows Updates folder structure." }
-    if ($xml.xml.win10.value -eq $true -and $destinationPath -match $xml.xml.win10.majorVersion) { New-Item -Path "$destinationPath\Windows Security Updates_$($yyyyMMdd)_Release\" -ItemType Directory -Force -Verbose | Out-Null }
-    elseif ($xml.xml.win11.value -eq $true -and $destinationPath -match $xml.xml.win11.majorVersion) { New-Item -Path "$destinationPath\Windows Security Updates_$($yyyyMMdd)_Release\Cumulative" -ItemType Directory -Force -Verbose | Out-Null }
+    if ((Resolve-Path -Path "$destinationPath\Security Updates for Microsoft Windows and Office_*" -ErrorAction SilentlyContinue).Path.Count -ge 1) { throw "$destinationPath has a Windows and Office Updates folder structure." }
+    if ($xml.xml.win10.value -eq $true -and $destinationPath -match $xml.xml.win10.majorVersion) { New-Item -Path "$destinationPath\Security Updates for Microsoft Windows and Office_$($yyyyMMdd)_Release\" -ItemType Directory -Force -Verbose | Out-Null }
+    elseif ($xml.xml.win11.value -eq $true -and $destinationPath -match $xml.xml.win11.majorVersion) { New-Item -Path "$destinationPath\Security Updates for Microsoft Windows and Office_$($yyyyMMdd)_Release\Cumulative" -ItemType Directory -Force -Verbose | Out-Null }
     else { throw $invalidSettingsXmlFoundErrorMessage }
 
-    (Get-ChildItem -Path "$gitPath\monthly updates" -Recurse | Where-Object { $_.Name -match 'windows updates.ps1' }).FullName | Copy-Item -Destination "$($(Resolve-Path -Path "$destinationPath\Windows Security Updates*\").Path)" -Container -Force -Verbose
+    (Get-ChildItem -Path "$gitPath\monthly updates" -Recurse | Where-Object { $_.Name -match 'windows updates.ps1' }).FullName | Copy-Item -Destination "$($(Resolve-Path -Path "$destinationPath\Security Updates for Microsoft Windows and Office_*\").Path)" -Container -Force -Verbose
 }
 
 function mkavfolder
@@ -145,7 +144,7 @@ function mkavfolder
 
     gtxml -outNull ; tegit
     if (-not(Test-Path -Path $destinationPath -ErrorAction SilentlyContinue)) { throw "The source path $destinationPath does not exist." } ; if ($xml.xml.win11.value -ne $true ) { throw "This function is only applicable to Windows 11 (e.g.:$($xml.xml.win11.placeholder))" }
-    tegit ; New-Item -Path "$destinationPath\Windows Defender Definitions_Latest_Signatures\Latest" -ItemType Directory -Force -Verbose | Out-Null ; (Get-ChildItem -Path "$gitPath\monthly updates\_windefend\" | Where-Object { $_.Extension -eq '.ps1' }).FullName | Copy-Item -Destination $(Join-Path -Path $destinationPath -ChildPath 'Windows Defender Definitions_Latest_Signatures') -Container -Force -Verbose
+    tegit ; New-Item -Path "$destinationPath\Security Definitions for Windows Defender AV\Latest" -ItemType Directory -Force -Verbose | Out-Null ; (Get-ChildItem -Path "$gitPath\monthly updates\_windefend\" | Where-Object { $_.Extension -eq '.ps1' }).FullName | Copy-Item -Destination $(Join-Path -Path $destinationPath -ChildPath 'Security Definitions for Windows Defender AV') -Container -Force -Verbose
 }
 
 function mkcmd
@@ -234,19 +233,15 @@ function mkupdate
 
     (Get-ChildItem -Path "$gitPath\monthly updates" -Recurse | Where-Object { $_.Name -match 'monthly_updates.ps1' }).FullName | Copy-Item -Destination $sourcePath -Container -Force -Verbose
 
-    New-Item -Path $sourcePath -Name Branding_Monthly_Updates -ItemType Directory -Force -Verbose | Out-Null
+    New-Item -Path $sourcePath -Name 'branding for Monthly Updates' -ItemType Directory -Force -Verbose | Out-Null
     if ($xml.xml.win11.value -eq $true)
     {
-        (Get-ChildItem -Path "$gitPath\monthly updates\*branding" -Recurse | Where-Object { $_.Name -notmatch 'showapps' }).FullName, (Get-ChildItem -Path "$gitPath\baseline" -Recurse -Filter 'wallpaper_*.zip').FullName | Copy-Item -Destination $(Join-Path -Path $sourcePath -ChildPath 'Branding_Monthly_Updates') -Container -Force -Verbose | Copy-Item -Destination $(Join-Path -Path $sourcePath -ChildPath 'branding') -Container -Force -Verbose
+        (Get-ChildItem -Path "$gitPath\monthly updates\*branding" -Recurse | Where-Object { $_.Name -notmatch 'showapps' }).FullName, (Get-ChildItem -Path "$gitPath\baseline" -Recurse -Filter 'wallpaper_*.zip').FullName | Copy-Item -Destination $(Join-Path -Path $sourcePath -ChildPath 'branding for Monthly Updates') -Container -Force -Verbose | Copy-Item -Destination $(Join-Path -Path $sourcePath -ChildPath 'branding') -Container -Force -Verbose
     }
     if ($xml.xml.win10.value -eq $true)
     {
-        (Get-ChildItem -Path "$gitPath\monthly updates\*branding" -Recurse).FullName | Copy-Item -Destination $(Join-Path -Path $sourcePath -ChildPath 'Branding_Monthly_Updates') -Container -Force -Verbose | Copy-Item -Destination $(Join-Path -Path $sourcePath -ChildPath 'branding') -Container -Force -Verbose
+        (Get-ChildItem -Path "$gitPath\monthly updates\*branding" -Recurse).FullName | Copy-Item -Destination $(Join-Path -Path $sourcePath -ChildPath 'branding for Monthly Updates') -Container -Force -Verbose | Copy-Item -Destination $(Join-Path -Path $sourcePath -ChildPath 'branding') -Container -Force -Verbose
     }
-
-    (Get-ChildItem -Path $sourcePath -Directory).Name | Out-File -FilePath $(Join-Path -Path $sourcePath -ChildPath 'README.txt')
-    $i = ($sourcePath | Split-Path -Leaf).Split('-')[2] ; $version = Get-ChildItem -Path "$gitPath\monthly updates" -Recurse | Where-Object { $_.Name -eq $i }
-    $script:readmedestination = "$gitPath\monthly updates\$version" ; if ($null -ne $version) { Move-Item -Path $sourcePath\*.md -Destination $readmedestination -Force -Verbose } else { throw 'No git "version" folder found to copy the "README.txt" into' }
 
     mkcmd ; $destinationpath = ($sourcePath | Split-Path -Leaf) + '_' + $gttimeutc + '.7z' ; $fullyqualifieddestinationpath = $sourcePath + $destinationpath
     $files = Get-ChildItem -Path $sourcePath -Recurse ; $files | Unblock-File -Verbose ; $files | ForEach-Object { Write-Verbose -Message "Adding $_ to $destinationpath" -Verbose }
