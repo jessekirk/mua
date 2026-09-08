@@ -57,7 +57,7 @@ function rnreleasable
 {
     Get-ChildItem -Path $fullyqualifieddestinationpath | Where-Object { $_.Name -eq 'Release' } | Rename-Item -NewName 'Output' -Force -Verbose
     Move-Item -Path "$fullyqualifieddestinationpath\Output\*" -Destination $fullyqualifieddestinationpath -Force -Verbose ; Remove-Item -Path "$fullyqualifieddestinationpath\Output" -Force -Verbose
-    Write-Host -Object '' ; Write-Host -Object "Reminder! Don't forget to run 'git' ADD, COMMIT and PUSH your README.md to => repo: $readmedestination." -ForegroundColor Magenta ; gtbuildtime
+    Write-Host -Object '' ; Write-Host -Object "Reminder! Don't forget to run 'git' ADD, COMMIT and PUSH your README.txt to => repo: $readmedestination." -ForegroundColor Magenta ; gtbuildtime
 }
 
 function rmupdates
@@ -82,7 +82,7 @@ function hash256sums
                 $h = [pscustomobject]@{ name = $i.Path | Split-Path -Leaf ; hash = $i.Hash.ToLower() ; algorithm = $i.algorithm }
                 $array += $h
             }
-            $logfilepath = (Get-ChildItem -Path $fullyqualifieddestinationpath -Recurse -File -Filter '*.7z').FullName.Replace('.7z', '.7z_sha256sums.txt') ; $array | Format-List | Out-File -FilePath $logfilepath
+            $logfilepath = (Get-ChildItem -Path $fullyqualifieddestinationpath -Recurse -File -Filter '*.7z').FullName.Replace('.7z', '.7z.sha256sums.txt') ; $array | Format-List | Out-File -FilePath $logfilepath
             Get-ChildItem -Path "$fullyqualifieddestinationpath\Release" -Recurse -Force | Unblock-File -Verbose ; rmupdates
         }
         'path'
@@ -93,7 +93,7 @@ function hash256sums
                 $h = [pscustomobject]@{ name = $i.Path | Split-Path -Leaf ; hash = $i.Hash.ToLower() ; algorithm = $i.algorithm }
                 $array += $h
             }
-            $logfilepath = (Get-ChildItem -Path $path -Recurse -File -Filter '*.7z').FullName.Replace('.7z', '.7z_sha256sums.txt') ; $array | Format-List | Out-File -FilePath $logfilepath ; Get-ChildItem -Path $path -Recurse -Force | Unblock-File -Verbose
+            $logfilepath = (Get-ChildItem -Path $path -Recurse -File -Filter '*.7z').FullName.Replace('.7z', '.7z.sha256sums.txt') ; $array | Format-List | Out-File -FilePath $logfilepath ; Get-ChildItem -Path $path -Recurse -Force | Unblock-File -Verbose
         }
     }
 }
@@ -244,9 +244,9 @@ function mkupdate
         (Get-ChildItem -Path "$gitPath\monthly updates\*branding" -Recurse).FullName | Copy-Item -Destination $(Join-Path -Path $sourcePath -ChildPath 'Branding_Monthly_Updates') -Container -Force -Verbose | Copy-Item -Destination $(Join-Path -Path $sourcePath -ChildPath 'branding') -Container -Force -Verbose
     }
 
-    (Get-ChildItem -Path $sourcePath -Directory).Name | Out-File -FilePath $(Join-Path -Path $sourcePath -ChildPath 'README.md')
+    (Get-ChildItem -Path $sourcePath -Directory).Name | Out-File -FilePath $(Join-Path -Path $sourcePath -ChildPath 'README.txt')
     $i = ($sourcePath | Split-Path -Leaf).Split('-')[2] ; $version = Get-ChildItem -Path "$gitPath\monthly updates" -Recurse | Where-Object { $_.Name -eq $i }
-    $script:readmedestination = "$gitPath\monthly updates\$version" ; if ($null -ne $version) { Move-Item -Path $sourcePath\*.md -Destination $readmedestination -Force -Verbose } else { throw 'No git "version" folder found to copy the "README.md" into' }
+    $script:readmedestination = "$gitPath\monthly updates\$version" ; if ($null -ne $version) { Move-Item -Path $sourcePath\*.md -Destination $readmedestination -Force -Verbose } else { throw 'No git "version" folder found to copy the "README.txt" into' }
 
     mkcmd ; $destinationpath = ($sourcePath | Split-Path -Leaf) + '_' + $gttimeutc + '.7z' ; $fullyqualifieddestinationpath = $sourcePath + $destinationpath
     $files = Get-ChildItem -Path $sourcePath -Recurse ; $files | Unblock-File -Verbose ; $files | ForEach-Object { Write-Verbose -Message "Adding $_ to $destinationpath" -Verbose }
