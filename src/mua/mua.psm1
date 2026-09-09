@@ -56,7 +56,7 @@ function gtbuildtime
 function rnreleasable
 {
     Get-ChildItem -Path $fullyqualifieddestinationpath | Where-Object { $_.Name -eq 'Release' } | Rename-Item -NewName 'Output' -Force -Verbose
-    Move-Item -Path "$fullyqualifieddestinationpath\Output\*" -Destination $fullyqualifieddestinationpath -Force -Verbose ; Remove-Item -Path "$fullyqualifieddestinationpath\Output" -Force -Verbose
+    Move-Item -Path "$fullyqualifieddestinationpath\Output\*" -Destination $fullyqualifieddestinationpath -Force -Verbose ; Remove-Item -Path "$fullyqualifieddestinationpath\Output" -Force -Verbose ; gtbuildtime
 }
 
 function rmupdates
