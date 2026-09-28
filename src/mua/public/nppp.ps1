@@ -1,9 +1,8 @@
-$ProgressPreference = 'SilentlyContinue'
-$w = Invoke-WebRequest -Uri 'https://notepad-plus-plus.org/downloads/' -UseBasicParsing  ; $links = $w.Links.href | Where-Object { $_ -match 'notepad-plus-plus.org' }
+$ProgressPreference = 'SilentlyContinue' ; $w = Invoke-WebRequest -Uri 'https://notepad-plus-plus.org/downloads/' -UseBasicParsing  ; $links = $w.Links.href | Where-Object { $_ -match 'notepad-plus-plus.org' }
 $latest = $links | Select-Object -First 1 ; $w = Invoke-WebRequest -Uri $latest -UseBasicParsing
 $fileversion = [version]($latest | Split-Path -Leaf).Remove(0, 1)
 
-if ($showVersion.IsPresent) { return Write-Host -Object "Latest version is $($latest | Split-Path -Leaf)" -ForegroundColor Cyan }
+if ($showVersion.IsPresent) { return Write-Host -Object "latest notepad++ : $($latest | Split-Path -Leaf)" -ForegroundColor Cyan }
 if ($xml.xml.win10.value -eq $true)
 {
     $urilocation = $w.Links.href | Where-Object { $_ -match 'installer.x64.exe' -and $_ -notmatch 'installer.x64.exe.sig' }

@@ -129,22 +129,21 @@ function mkpatchtuesfolder
         }
     }
 
-    if ((Resolve-Path -Path "$destinationPath\Security Updates for Microsoft Windows and Office_*" -ErrorAction SilentlyContinue).Path.Count -ge 1) { throw "$destinationPath has a Windows and Office Updates folder structure." }
-    if ($xml.xml.win10.value -eq $true -and $destinationPath -match $xml.xml.win10.majorVersion) { New-Item -Path "$destinationPath\Security Updates for Microsoft Windows and Office_$($yyyyMMdd)" -ItemType Directory -Force -Verbose | Out-Null }
-    elseif ($xml.xml.win11.value -eq $true -and $destinationPath -match $xml.xml.win11.majorVersion) { New-Item -Path "$destinationPath\Security Updates for Microsoft Windows and Office_$($yyyyMMdd)\Cumulative" -ItemType Directory -Force -Verbose | Out-Null }
-    else { throw $invalidSettingsXmlFoundErrorMessage }
-
-    (Get-ChildItem -Path "$gitPath\monthly updates" -Recurse | Where-Object { $_.Name -match 'windows updates.ps1' }).FullName | Copy-Item -Destination "$($(Resolve-Path -Path "$destinationPath\Security Updates for Microsoft Windows and Office_*\").Path)" -Container -Force -Verbose
-}
-
-function mkavfolder
-{
-    [cmdletbinding()]
-    param([parameter(Mandatory)][string]$destinationPath)
-
-    gtxml -outNull ; tegit
-    if (-not(Test-Path -Path $destinationPath -ErrorAction SilentlyContinue)) { throw "The source path $destinationPath does not exist." } ; if ($xml.xml.win11.value -ne $true ) { throw "This function is only applicable to Windows 11 (e.g.:$($xml.xml.win11.placeholder))" }
-    tegit ; New-Item -Path "$destinationPath\Security Definitions for Windows Defender AV\Latest" -ItemType Directory -Force -Verbose | Out-Null ; (Get-ChildItem -Path "$gitPath\monthly updates\_windefend\" | Where-Object { $_.Extension -eq '.ps1' }).FullName | Copy-Item -Destination $(Join-Path -Path $destinationPath -ChildPath 'Security Definitions for Windows Defender AV') -Container -Force -Verbose
+    if ($xml.xml.win10.value -eq $true -and $destinationPath -match $xml.xml.win10.majorVersion)
+    {
+        New-Item -Path "$destinationPath\Security Updates for Office 2016 x86_$($yyyyMMdd)" -ItemType Directory -Force -Verbose | Out-Null
+        (Get-ChildItem -Path "$gitPath\monthly updates\_windows_updates" | Where-Object { $_.Name -match 'windows updates.ps1' }).FullName | Copy-Item -Destination "$($(Resolve-Path -Path "$destinationPath\Security Updates for Office 2016 x86*\").Path)" -Container -Force -Verbose
+    }
+    elseif ($xml.xml.win11.value -eq $true -and $destinationPath -match $xml.xml.win11.majorVersion)
+    {
+        New-Item -Path "$destinationPath\Security Updates for Windows 11 $($xml.xml.win11.windowsVersion)_$($yyyyMMdd)\Cumulative" -ItemType Directory -Force -Verbose | Out-Null
+        New-Item -Path "$destinationPath\Security Updates for Office 2024 LTSC x64_$($yyyyMMdd)" -ItemType Directory -Force -Verbose | Out-Null
+        New-Item -Path "$destinationPath\Security Definitions for Windows Defender AV_$($yyyyMMdd)\Latest" -ItemType Directory -Force -Verbose | Out-Null
+        (Get-ChildItem -Path "$gitPath\monthly updates\_windows_updates" | Where-Object { $_.Name -match 'windows updates.ps1' }).FullName | Copy-Item -Destination "$($(Resolve-Path -Path "$destinationPath\Security Updates for Windows 11*\").Path)" -Container -Force -Verbose
+        (Get-ChildItem -Path "$gitPath\monthly updates\_office_updates" | Where-Object { $_.Name -match 'office updates.ps1|office2024.xml' }).FullName | Copy-Item -Destination "$($(Resolve-Path -Path "$destinationPath\Security Updates for Office 2024 LTSC x64*\").Path)" -Container -Force -Verbose
+        (Get-ChildItem -Path "$gitPath\monthly updates\_windefend" | Where-Object { $_.Name -match 'windows defender definitions.ps1' }).FullName | Copy-Item -Destination "$($(Resolve-Path -Path "$destinationPath\Security Definitions for Windows Defender AV*\").Path)" -Container -Force -Verbose
+    }
+    else { $invalidSettingsXmlFoundErrorMessage }
 }
 
 function mkcmd
