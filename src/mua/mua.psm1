@@ -12,9 +12,7 @@ function gtnpp { param([parameter(ParameterSetName = 'show')][switch]$showVersio
 
 function gttimeutc
 {
-    param([parameter(ParameterSetName = 'log')][switch]$loggingFormat)
-    if ($loggingFormat.IsPresent) { return (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ') }
-    return (Get-Date).ToUniversalTime().ToString('yyyyMMddTHHmmZ') #ISO 8601 formatting
+    return (Get-Date).ToUniversalTime().ToString('yyyyMMddTHHmmZ')
 }
 
 $script:gttimeutc = gttimeutc ; $script:domain = gtdomain
@@ -75,24 +73,21 @@ function hash256sums
     {
         default
         {
-            $array = @()
             (Get-ChildItem -Path $fullyqualifieddestinationpath -Recurse -File).FullName | ForEach-Object {
-                Write-Verbose -Message "Hashing $_ " -Verbose ; $i = Get-FileHash -Path $_ -Algorithm SHA256
-                $h = [pscustomobject]@{ name = $i.Path | Split-Path -Leaf ; hash = $i.Hash.ToLower() ; algorithm = $i.algorithm }
-                $array += $h
-            }
-            $logfilepath = (Get-ChildItem -Path $fullyqualifieddestinationpath -Recurse -File -Filter '*.7z').FullName.Replace('.7z', '.7z.sha256sums.txt') ; $array | Format-List | Out-File -FilePath $logfilepath
+                Write-Verbose -Message "Hashing : $_ " -Verbose ; Get-FileHash -Path $_ -Algorithm SHA256 | ForEach-Object {
+                    "$($_.hash.tolower())  $($_.path | Split-Path -Leaf)"
+                }
+            } | Out-File -FilePath $(Get-ChildItem -Path $fullyqualifieddestinationpath -Recurse -File -Filter '*.7z').FullName.Replace('.7z', '.7z.sha256.txt')
             Get-ChildItem -Path "$fullyqualifieddestinationpath\Release" -Recurse -Force | Unblock-File -Verbose ; rmupdates
         }
         'path'
         {
-            $array = @()
             (Get-ChildItem -Path $path -Recurse -File).FullName | ForEach-Object {
-                Write-Verbose -Message "Hashing $_ " -Verbose ; $i = Get-FileHash -Path $_ -Algorithm SHA256
-                $h = [pscustomobject]@{ name = $i.Path | Split-Path -Leaf ; hash = $i.Hash.ToLower() ; algorithm = $i.algorithm }
-                $array += $h
-            }
-            $logfilepath = (Get-ChildItem -Path $path -Recurse -File -Filter '*.7z').FullName.Replace('.7z', '.7z.sha256sums.txt') ; $array | Format-List | Out-File -FilePath $logfilepath ; Get-ChildItem -Path $path -Recurse -Force | Unblock-File -Verbose
+                Write-Verbose -Message "Hashing : $_ " -Verbose ; Get-FileHash -Path $_ -Algorithm SHA256 | ForEach-Object {
+                    "$($_.hash.tolower())  $($_.path | Split-Path -Leaf)"
+                }
+            } | Out-File -FilePath $(Get-ChildItem -Path $path -Recurse -File -Filter '*.7z').FullName.Replace('.7z', '.7z.sha256.txt')
+            Get-ChildItem -Path $path -Recurse -Force | Unblock-File -Verbose
         }
     }
 }
